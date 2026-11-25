@@ -3,7 +3,7 @@ from openai import OpenAI
 
 # --- CONFIG ---
 AI_NAME = "AETHER AI"
-MODEL_NAME = "deepseek/deepseek-r1:free"
+MODEL_NAME = "google/gemma-2-9b-it:free"
 
 st.set_page_config(page_title=AI_NAME, page_icon="💠", layout="centered")
 

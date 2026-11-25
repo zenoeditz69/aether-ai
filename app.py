@@ -50,17 +50,21 @@ st.markdown(f"""
         border-radius: 999px;
         font-size: 0.75rem;
         font-weight: 600;
-        color: #00f0ff;
-        background: rgba(0, 240, 255, 0.1);
-        border: 1px solid rgba(0, 240, 255, 0.45);
-        box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+        color: #00ff88;
+        background: rgba(0, 255, 136, 0.1);
+        border: 1px solid rgba(0, 255, 136, 0.45);
+        box-shadow: 0 0 10px rgba(0, 255, 136, 0.25);
     }}
     [data-testid="stChatMessage"] {{
-        background: rgba(15, 23, 42, 0.65);
-        border: 1px solid rgba(148, 163, 184, 0.15);
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(0, 255, 136, 0.25);
         border-radius: 14px;
         padding: 1rem;
         margin-bottom: 0.75rem;
+    }}
+    [data-testid="stChatMessage"] p, [data-testid="stChatMessage"] li {{
+        color: #00ff88 !important;
+        font-size: 1.02rem;
     }}
     .stButton > button {{
         background: rgba(15, 23, 42, 0.9);
@@ -79,7 +83,7 @@ st.markdown(f"""
     <div class="neon-banner">
         <div class="neon-title">💠 {AI_NAME}</div>
         <div class="neon-sub">Next-Gen Open-Source Neural Assistant</div>
-        <span class="neon-pill">⚡ POWERED BY DEEPSEEK OPEN ARCHITECTURE</span>
+        <span class="neon-pill">⚡ YOUR PERSONAL ASSISTANT</span>
     </div>
 """, unsafe_allow_html=True)
 
@@ -117,18 +121,18 @@ if not st.session_state.messages:
     st.caption("✨ **Quick Demo Prompts (Click to test):**")
     col1, col2, col3 = st.columns(3)
     with col1:
-        if st.button("🚀 Explain AI simply", use_container_width=True):
+        if st.button("Explain AI simply", use_container_width=True):
             selected_prompt = "Explain how open-source AI models work in 3 simple bullet points."
     with col2:
-        if st.button("🐍 Python Fibonacci", use_container_width=True):
+        if st.button("Python Fibonacci", use_container_width=True):
             selected_prompt = "Write a clean Python function for the Fibonacci sequence."
     with col3:
-        if st.button("🧠 Study Plan", use_container_width=True):
+        if st.button("Study Plan", use_container_width=True):
             selected_prompt = "Give me a 3-step trick to memorize complex topics fast."
 
 # --- DISPLAY MESSAGES ---
 for msg in st.session_state.messages:
-    avatar = "🧑‍🚀" if msg["role"] == "user" else "💠"
+    avatar = "👤" if msg["role"] == "user" else "💠"
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
 
@@ -138,7 +142,7 @@ prompt = selected_prompt or user_input
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="🧑‍🚀"):
+    with st.chat_message("user", avatar="👤"):
         st.markdown(prompt)
 
     api_messages = [{"role": "system", "content": system_prompts[mode]}] + st.session_state.messages
@@ -160,3 +164,4 @@ if prompt:
     st.session_state.messages.append({"role": "assistant", "content": full_reply})
     if selected_prompt:
         st.rerun()
+    

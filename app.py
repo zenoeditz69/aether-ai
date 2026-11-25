@@ -2,12 +2,16 @@
 
 Run with:  streamlit run app.py
 Needs:     .streamlit/secrets.toml  ->  OPENROUTER_API_KEY = "sk-or-..."
+History:   saved automatically to chats.json next to this file
 """
 
 from __future__ import annotations
 
+import json
 import os
+import uuid
 from datetime import datetime
+from pathlib import Path
 from typing import Iterator
 
 import openai
@@ -47,6 +51,9 @@ DEMO_PROMPTS: list[tuple[str, str]] = [
     ("Python Fibonacci", "Write a clean Python function for the Fibonacci sequence."),
     ("Study Plan", "Give me a 3-step trick to memorize complex topics fast."),
 ]
+
+CHATS_FILE = Path(__file__).with_name("chats.json")  # saved chat history
+MAX_SAVED_CHATS = 50
 
 st.set_page_config(page_title=AI_NAME, page_icon="💠", layout="centered")
 
@@ -196,6 +203,9 @@ div[data-baseweb="popover"] li:hover { background: rgba(0, 240, 255, 0.15) !impo
 }
 [data-testid="stChatInput"] button { background: transparent !important; color: #00f0ff !important; }
 
+/* Chat history buttons: left-aligned titles */
+section[data-testid="stSidebar"] .stButton > button { justify-content: flex-start; text-align: left; }
+
 /* Buttons */
 .stButton > button, .stDownloadButton > button {
     background: rgba(15, 23, 42, 0.9);
@@ -294,13 +304,68 @@ def queue_prompt(text: str) -> None:
     st.session_state.pending_prompt = text
 
 
+def now_iso() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def load_chats() -> dict[str, dict]:
+    """Read saved chats from disk (empty dict if none yet)."""
+    try:
+        data = json.loads(CHATS_FILE.read_text(encoding="utf-8"))
+        return {
+            cid: c for cid, c in data.items()
+            if isinstance(c, dict) and c.get("messages")
+        }
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def save_chats() -> None:
+    """Write non-empty chats to disk (newest first, capped)."""
+    chats = {cid: c for cid, c in st.session_state.chats.items() if c["messages"]}
+    newest = sorted(chats.items(), key=lambda kv: kv[1]["updated"], reverse=True)
+    try:
+        tmp = CHATS_FILE.with_suffix(".tmp")
+        tmp.write_text(
+            json.dumps(dict(newest[:MAX_SAVED_CHATS]), ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        tmp.replace(CHATS_FILE)
+    except OSError:
+        st.toast("Couldn't save chat history to disk.", icon="⚠️")
+
+
+def ensure_chat() -> dict:
+    """Return the active chat, creating it if it doesn't exist yet."""
+    chats = st.session_state.chats
+    cid = st.session_state.chat_id
+    if cid not in chats:
+        chats[cid] = {"title": "New chat", "messages": [], "updated": now_iso()}
+    return chats[cid]
+
+
+def new_chat() -> None:
+    st.session_state.chat_id = uuid.uuid4().hex
+
+
+def open_chat(cid: str) -> None:
+    st.session_state.chat_id = cid
+
+
+def delete_chat(cid: str) -> None:
+    st.session_state.chats.pop(cid, None)
+    if cid == st.session_state.chat_id:
+        new_chat()
+    save_chats()
+
+
 def wipe_chat() -> None:
-    st.session_state.messages = []
+    delete_chat(st.session_state.chat_id)
 
 
 def regenerate() -> None:
     """Drop the last assistant reply so it gets generated again."""
-    msgs = st.session_state.messages
+    msgs = ensure_chat()["messages"]
     if msgs and msgs[-1]["role"] == "assistant":
         msgs.pop()
         st.session_state.regen = True
@@ -315,15 +380,41 @@ def chat_as_markdown(messages: list[dict[str, str]]) -> str:
 
 
 # ----------------------------------------------------------------------------
-# STATE
+# STATE  (chats are loaded from disk once per browser session)
 # ----------------------------------------------------------------------------
-st.session_state.setdefault("messages", [])
+if "chats" not in st.session_state:
+    st.session_state.chats = load_chats()
+    st.session_state.chat_id = uuid.uuid4().hex
+
+chat = ensure_chat()
+messages = chat["messages"]
 
 # ----------------------------------------------------------------------------
 # SIDEBAR
 # ----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown(f"### 💠 {AI_NAME} SYSTEM")
+    st.button("➕ New chat", on_click=new_chat, use_container_width=True)
+
+    saved = sorted(
+        ((cid, c) for cid, c in st.session_state.chats.items() if c["messages"]),
+        key=lambda kv: kv[1]["updated"],
+        reverse=True,
+    )
+    if saved:
+        st.caption("🕘 **Chat history**")
+        with st.container(height=260, border=False):
+            for cid, c in saved[:30]:
+                col_open, col_del = st.columns([5, 1])
+                with col_open:
+                    label = ("▶ " if cid == st.session_state.chat_id else "") + c["title"]
+                    st.button(label, key=f"open_{cid}", on_click=open_chat,
+                              args=(cid,), use_container_width=True)
+                with col_del:
+                    st.button("🗑️", key=f"del_{cid}", on_click=delete_chat,
+                              args=(cid,), help="Delete this chat")
+    st.divider()
+
     mode = st.selectbox("Neural Mode", list(MODES))
 
     with st.expander("Advanced settings"):
@@ -343,20 +434,20 @@ with st.sidebar:
         )
 
     st.caption(f"**Active model:** `{model_name}`")
-    st.caption(f"**Messages in chat:** {len(st.session_state.messages)}")
+    st.caption(f"**Messages in this chat:** {len(messages)}")
     st.divider()
 
-    has_reply = bool(st.session_state.messages) and st.session_state.messages[-1]["role"] == "assistant"
+    has_reply = bool(messages) and messages[-1]["role"] == "assistant"
     st.button("🔄 Regenerate reply", on_click=regenerate, disabled=not has_reply, use_container_width=True)
     st.download_button(
         "💾 Download chat",
-        data=chat_as_markdown(st.session_state.messages),
+        data=chat_as_markdown(messages),
         file_name="aether-chat.md",
         mime="text/markdown",
-        disabled=not st.session_state.messages,
+        disabled=not messages,
         use_container_width=True,
     )
-    st.button("🗑️ Wipe Memory", on_click=wipe_chat, use_container_width=True)
+    st.button("🗑️ Delete this chat", on_click=wipe_chat, disabled=not messages, use_container_width=True)
 
 # ----------------------------------------------------------------------------
 # API CLIENT
@@ -373,7 +464,7 @@ client = get_client(api_key)
 # ----------------------------------------------------------------------------
 # DEMO PROMPTS (only on an empty chat)
 # ----------------------------------------------------------------------------
-if not st.session_state.messages:
+if not messages:
     st.caption("✨ **Quick demo prompts — click to test:**")
     for col, (label, text) in zip(st.columns(len(DEMO_PROMPTS)), DEMO_PROMPTS):
         with col:
@@ -387,12 +478,15 @@ prompt = st.session_state.pop("pending_prompt", None) or typed
 regen_requested = st.session_state.pop("regen", False)
 
 if prompt:
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    messages.append({"role": "user", "content": prompt})
+    if len(messages) == 1:
+        chat["title"] = " ".join(prompt.split())[:40]
+    chat["updated"] = now_iso()
 
 # ----------------------------------------------------------------------------
 # RENDER HISTORY
 # ----------------------------------------------------------------------------
-for msg in st.session_state.messages:
+for msg in messages:
     avatar = "👤" if msg["role"] == "user" else "💠"
     with st.chat_message(msg["role"], avatar=avatar):
         st.markdown(msg["content"])
@@ -400,7 +494,6 @@ for msg in st.session_state.messages:
 # ----------------------------------------------------------------------------
 # GENERATE REPLY
 # ----------------------------------------------------------------------------
-messages = st.session_state.messages
 if (prompt or regen_requested) and messages and messages[-1]["role"] == "user":
     recent = messages[-history_limit:]
     api_messages = [{"role": "system", "content": MODES[mode]}, *recent]
@@ -416,8 +509,11 @@ if (prompt or regen_requested) and messages and messages[-1]["role"] == "user":
 
     if reply:
         messages.append({"role": "assistant", "content": reply})
-        st.rerun()  # refresh sidebar buttons and message count
+        chat["updated"] = now_iso()
+        save_chats()
+        st.rerun()  # refresh sidebar history and message count
     else:
         # Remove the unanswered prompt so the user can simply resend it.
         if prompt:
             messages.pop()
+        save_chats()

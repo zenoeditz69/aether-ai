@@ -3,7 +3,7 @@ from openai import OpenAI
 
 # --- CONFIG ---
 AI_NAME = "AETHER AI"
-MODEL_NAME = "particle-ai/particle-1:free"
+MODEL_NAME = "deepseek/deepseek-r1:free"
 
 st.set_page_config(page_title=AI_NAME, page_icon="💠", layout="centered")
 
@@ -65,6 +65,10 @@ st.markdown(f"""
     [data-testid="stChatMessage"] p, [data-testid="stChatMessage"] li {{
         color: #00ff88 !important;
         font-size: 1.02rem;
+    }}
+    /* Fix chat input text color */
+    [data-testid="stChatInput"] textarea {{
+        color: #0f172a !important;
     }}
     .stButton > button {{
         background: rgba(15, 23, 42, 0.9);
@@ -164,4 +168,3 @@ if prompt:
     st.session_state.messages.append({"role": "assistant", "content": full_reply})
     if selected_prompt:
         st.rerun()
-    

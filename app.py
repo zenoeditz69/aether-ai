@@ -86,7 +86,7 @@ st.markdown(f"""
 
     <div class="neon-banner">
         <div class="neon-title">💠 {AI_NAME}</div>
-        <div class="neon-sub">Next-Gen Open-Source Neural Assistant</div>
+        <div class="neon-sub">Next-Gen Neural Assistant</div>
         <span class="neon-pill">⚡ YOUR PERSONAL ASSISTANT</span>
     </div>
 """, unsafe_allow_html=True)

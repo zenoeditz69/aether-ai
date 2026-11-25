@@ -76,6 +76,37 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid rgba(0, 240, 255, 0.2);
 }
 
+/* Make ALL text readable on the dark background */
+.stApp p, .stApp li, .stApp span, .stApp label, .stApp small,
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+[data-testid="stCaptionContainer"], [data-testid="stWidgetLabel"] p,
+[data-testid="stMarkdownContainer"] p, summary, summary span {
+    color: #e2e8f0 !important;
+}
+[data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p,
+.stApp small { color: #94a3b8 !important; }
+
+/* Dark inputs, dropdowns, expanders */
+.stApp input, .stApp textarea {
+    background: #0b1220 !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(0, 240, 255, 0.35) !important;
+}
+div[data-baseweb="select"] > div {
+    background: #0b1220 !important;
+    border: 1px solid rgba(0, 240, 255, 0.35) !important;
+}
+div[data-baseweb="select"] * { color: #e2e8f0 !important; }
+div[data-baseweb="popover"] ul, div[data-baseweb="popover"] li,
+div[data-baseweb="menu"] { background: #0b1220 !important; color: #e2e8f0 !important; }
+div[data-baseweb="popover"] li:hover { background: rgba(0, 240, 255, 0.15) !important; }
+[data-testid="stExpander"] details {
+    background: rgba(15, 23, 42, 0.7) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    border-radius: 10px;
+}
+[data-testid="stSlider"] [data-baseweb="slider"] div { color: #e2e8f0 !important; }
+
 /* Banner */
 .neon-banner {
     background: rgba(15, 23, 42, 0.75);
@@ -129,27 +160,41 @@ section[data-testid="stSidebar"] {
     background: rgba(12, 22, 44, 0.9);
 }
 [data-testid="stChatMessage"] p,
-[data-testid="stChatMessage"] li { color: #d9f99d; font-size: 1.02rem; line-height: 1.6; }
+[data-testid="stChatMessage"] li { color: #d9f99d !important; font-size: 1.02rem; line-height: 1.6; }
 [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) p,
-[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) p { color: #bae6fd; }
-[data-testid="stChatMessage"] code { color: #00f0ff; }
+[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) p { color: #bae6fd !important; }
+[data-testid="stChatMessage"] code { color: #00f0ff !important; }
 [data-testid="stChatMessage"] pre {
     border: 1px solid rgba(168, 85, 247, 0.35);
     border-radius: 10px;
 }
 
-/* Chat input: dark field, readable light text */
+/* Chat input: fully black, including the bar it sits in */
+[data-testid="stBottom"], [data-testid="stBottom"] > div,
+[data-testid="stBottomBlockContainer"], [data-testid="stChatInputContainer"] {
+    background: #050811 !important;
+}
+[data-testid="stChatInput"], [data-testid="stChatInput"] > div,
+[data-testid="stChatInput"] div[data-baseweb="textarea"],
+[data-testid="stChatInput"] div[data-baseweb="base-input"] {
+    background: #000000 !important;
+    border-color: rgba(0, 240, 255, 0.45) !important;
+}
 [data-testid="stChatInput"] {
-    background: rgba(15, 23, 42, 0.95);
-    border: 1px solid rgba(0, 240, 255, 0.4);
+    border: 1px solid rgba(0, 240, 255, 0.45);
     border-radius: 14px;
 }
-[data-testid="stChatInput"] textarea { color: #e2e8f0 !important; }
+[data-testid="stChatInput"] textarea {
+    background: transparent !important;
+    color: #e2e8f0 !important;
+    caret-color: #00f0ff;
+}
 [data-testid="stChatInput"] textarea::placeholder { color: #64748b !important; }
 [data-testid="stChatInput"]:focus-within {
     border-color: #a855f7;
     box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
 }
+[data-testid="stChatInput"] button { background: transparent !important; color: #00f0ff !important; }
 
 /* Buttons */
 .stButton > button, .stDownloadButton > button {
@@ -376,6 +421,3 @@ if (prompt or regen_requested) and messages and messages[-1]["role"] == "user":
         # Remove the unanswered prompt so the user can simply resend it.
         if prompt:
             messages.pop()
-
-       
-        
